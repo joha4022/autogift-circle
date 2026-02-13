@@ -1,0 +1,16 @@
+services:
+  db:
+    image: postgres:16
+    container_name: autogift_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: autogift
+      POSTGRES_PASSWORD: autogift_pw
+      POSTGRES_DB: autogift
+    ports:
+      - "5432:5432"
+    volumes:
+      - autogift_pgdata:/var/lib/postgresql/data
+
+volumes:
+  autogift_pgdata:
