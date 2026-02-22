@@ -40,14 +40,15 @@ export default function OnboardingPage() {
     setError(null);
 
     const res = await fetch("/api/onboarding", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(form),
+      credentials: "include",
     });
 
     const data = await res.json();
     if (!res.ok || !data.ok) {
-        throw new Error(data?.error || "Failed to save onboarding data");
+      throw new Error(data?.error || "Failed to save onboarding data");
     }
 
     router.push("/");

@@ -1,27 +1,42 @@
-import NextAuth from "next-auth";
-import Google from "next-auth/providers/google";
+import type { NextAuthOptions } from "next-auth";
+import GoogleProvider from "next-auth/providers/google";
 import { PrismaAdapter } from "@auth/prisma-adapter";
-import { prisma } from "./lib/prisma"; // adjust if your prisma client path differs
+import { prisma } from "@/lib/prisma";
 
-export const { handlers, auth, signIn, signOut } = NextAuth({
+export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma),
   providers: [
-    Google({
+    GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
     }),
   ],
-  session: { strategy: "database" },
+  session: { strategy: "jwt" },
   secret: process.env.NEXTAUTH_SECRET,
 
-  // (Optional but recommended) ensure we always have a User row with email, etc.
   callbacks: {
-    async session({ session, user }) {
-      // Attach user id to session for later use
+    async jwt({ token, user }) {
+      // first login
+      if (user) token.id = (user as any).id;
+
+      // keep onboarded fresh
+      if (token.id) {
+        const dbUser = await prisma.user.findUnique({
+          where: { id: token.id as string },
+          select: { onboarded: true },
+        });
+        (token as any).onboarded = dbUser?.onboarded ?? false;
+      }
+
+      return token;
+    },
+
+    async session({ session, token }) {
       if (session.user) {
-        (session.user as any).id = user.id;
+        (session.user as any).id = (token as any).id;
+        (session.user as any).onboarded = (token as any).onboarded ?? false;
       }
       return session;
     },
   },
-});
+};
