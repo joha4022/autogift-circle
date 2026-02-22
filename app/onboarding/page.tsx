@@ -18,7 +18,6 @@ export default function OnboardingPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
   const [form, setForm] = useState<FormState>({
     name: "",
     birthday: "",
@@ -37,21 +36,39 @@ export default function OnboardingPage() {
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
-    setError(null);
 
-    const res = await fetch("/api/onboarding", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(form),
-      credentials: "include",
-    });
+    try {
+      const res = await fetch("/api/onboarding", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(form),
+      });
 
-    const data = await res.json();
-    if (!res.ok || !data.ok) {
-      throw new Error(data?.error || "Failed to save onboarding data");
+      // If server returns an error, read text safely
+      if (!res.ok) {
+        const msg = await res.text().catch(() => "");
+        throw new Error(msg || `Request failed (${res.status})`);
+      }
+
+      // Safely parse JSON *only if there is a body*
+      const text = await res.text();
+      const data = text ? JSON.parse(text) : { ok: true };
+
+      if (!data?.ok) {
+        throw new Error(data?.error || "Unknown server error");
+      }
+
+      // ✅ Navigate away after success
+      router.replace("/");
+      router.refresh();
+    } catch (err: any) {
+      console.error(err);
+      setError(err?.message ?? "Something went wrong");
+    } finally {
+      // ✅ Always clear loading state
+      setLoading(false);
     }
-
-    router.push("/");
   }
 
   const requiredMissing =
