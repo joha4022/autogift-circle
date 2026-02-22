@@ -39,18 +39,18 @@ export default function OnboardingPage() {
     setLoading(true);
     setError(null);
 
-    // Backend route will be added in the next step.
-    // For now, we just simulate a successful submit.
-    try {
-      // TODO: replace with:
-      // const res = await fetch("/api/onboarding", { method: "POST", ... })
-      await new Promise((r) => setTimeout(r, 300));
-      router.push("/");
-    } catch (err) {
-      setError("Something went wrong. Please try again.");
-    } finally {
-      setLoading(false);
+    const res = await fetch("/api/onboarding", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+    });
+
+    const data = await res.json();
+    if (!res.ok || !data.ok) {
+        throw new Error(data?.error || "Failed to save onboarding data");
     }
+
+    router.push("/");
   }
 
   const requiredMissing =
